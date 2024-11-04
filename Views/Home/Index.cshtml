@@ -1,8 +1,383 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
-}
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+    <title>Editor Simulado com Inserção Dinâmica de Texto e Remoção de Linhas</title>
+    <style>
+	
+	/* Bloqueia a seleção de texto na página */
+        body {
+            display: flex;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+			 user-select: none; /* Para navegadores modernos */
+            -moz-user-select: none; /* Para Firefox */
+            -webkit-user-select: none; /* Para Safari e Chrome */
+            -ms-user-select: none; /* Para Internet Explorer/Edge */
+        }
+
+        /* Estilização do menu lateral */
+        .menu-lateral {
+            width: 250px;
+            background-color: #333;
+            color: white;
+            padding: 15px;
+        }
+
+        .menu-lateral a, .menu-lateral button {
+            display: block;
+            color: white;
+            background-color: #444;
+            padding: 10px;
+            text-decoration: none;
+            margin-bottom: 10px;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .menu-lateral button:hover, .menu-lateral a:hover {
+            background-color: #575757;
+        }
+
+        /* Estilização do conteúdo principal */
+        .conteudo {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Estilização da área de texto simulada */
+        .editor-simulado {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+            position: relative;
+            background-color: #f9f9f9;
+            word-wrap: break-word;
+            min-height: 200px;
+        }
+
+        .editor-simulado .linha {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            position: relative; /* Adicionado para controlar o posicionamento do botão */
+        }
+
+        .editor-simulado .linha .deletar-linha {
+            margin-right: 10px;
+            color: red;
+            cursor: pointer;
+            visibility: hidden; /* Inicialmente invisível */
+        }
+		
+		.span-normal{
+			margin-left: 23px;
+		}
+
+        .editor-simulado .linha:hover .deletar-linha {
+            visibility: visible; /* Visível ao passar o mouse */
+        }
+
+        .editor-simulado .linha .adicionar-linha {
+            margin-left: 10px;
+            color: green;
+            cursor: pointer;
+            visibility: hidden; /* Inicialmente invisível */
+        }
+		
+		
+
+        .editor-simulado .linha:hover .adicionar-linha {
+            visibility: visible; /* Visível ao passar o mouse */
+        }
+
+        /* Estilização do rodapé */
+        .rodape {
+            text-align: center;
+            padding: 10px;
+            background-color: #f1f1f1;
+        }
+
+        /* Responsividade para telas menores */
+            body {
+                flex-direction: column;
+            }
+
+            .menu-lateral {
+                width: 100%;
+            }
+        
+
+        /* Estilo do seletor */
+        .seletor-container {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 1000;
+        }
+
+        select {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .fechar-seletor {
+            display: block;
+            margin-top: 5px;
+            padding: 5px;
+            background-color: #ff0000;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+        }
+		
+		/*edição de um selectbox sutil*/
+		.select-box {
+            display: inline-block;
+            cursor: pointer;
+            color: #333;
+            padding: 0px;
+            border-bottom: 3px dashed transparent;
+            transition: border-color 0.3s;
+        }
+
+        .select-box:hover {
+            border-color: #aaa;
+        }
+
+        .options {
+            display: none;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            background: #fff;
+            position: absolute;
+            margin-top: 5px;
+            z-index: 10;
+        }
+
+        .option {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .option:hover {
+            background-color: #f0f0f0;
+        }
+		
+		
+		.icon {
+            font-size: 44px; /* Tamanho do ícone */
+            color: #007bff; /* Cor do ícone */
+            margin-right: 10px; /* Espaço entre ícones e texto */
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-lateral">
+        <h3>Menu</h3>
+        <a href="#">Link 1<i class="fa-duotone fa-solid fa-notes-medical"></i></a>
+        <a href="#">Link 2</a>
+        <a href="#">Link 3</a>
+    </div>
+
+    <div class="conteudo">
+        <div  id="editorSimulado">
+		<p><strong>Texto em negrito</strong></p>
+        <p><em>Texto em itálico</em></p>
+        <p><u>Texto sublinhado</u></p>
+        <p><strong><em><u>Texto com negrito, itálico e sublinhado</u></em></strong></p>
+		
+		<div class="linha">
+			<span class="deletar-linha" onclick="deletarLinha(this)">✖</span>
+		</div>
+        
+    </div>
+	
+	<div class="rodape">
+            <button class="botao-copiar" onclick="copiarTexto()">Copiar Texto</button>
+        </div>
+	</div>
+
+    <script>
+	
+	 // Função para copiar texto formatado
+    async function copiarTexto() {
+	
+       const editor = document.getElementById('editorSimulado');
+	   
+	   // Clona o conteúdo do editor para não modificar o original
+		const editorClone = editor.cloneNode(true);
+		
+		// Remove elementos com a classe deletar-linha do clone
+		const linhasDeletar = editorClone.querySelectorAll('.deletar-linha');
+		linhasDeletar.forEach(linha => linha.remove());
+		
+		const htmlContent = editorClone.innerHTML; // Pega o HTML da div
+		const blob = new Blob([htmlContent], { type: 'text/html' });
+		const clipboardItem = new ClipboardItem({ 'text/html': blob });
+
+		try {
+			await navigator.clipboard.write([clipboardItem]);
+			alert('Texto copiado com formatação!');
+		} catch (err) {
+			alert('Erro ao copiar o texto: ' + err);
+		}
+        
+    }
+		 //document.getElementById('textoConclusao').style.display = 'none';
+		 //document.getElementById('textoConclusao1').style.display = 'none';
+		const textoConclusao = document.getElementById('textoConclusao');
+		const textoConclusao1 = document.getElementById('textoConclusao1');
+		const textoConclusao2 = document.getElementById('textoConclusao2');
+		
+		 // Função para alternar a visibilidade das opções
+        function toggleOptions(selectBox) {
+		
+            const optionsContainer = selectBox.nextElementSibling; // Obtém o próximo elemento irmão
+            const isVisible = optionsContainer.style.display === 'block';
+
+            // Alterna a visibilidade
+            optionsContainer.style.display = isVisible ? 'none' : 'block';
+
+            // Adiciona eventos às opções apenas quando as opções são exibidas
+            if (!isVisible) {
+                const options = optionsContainer.querySelectorAll('.option');
+                options.forEach(option => {
+                    option.addEventListener('click', () => selecionarOpcao(option));
+                });
+            }
+        }
+
+        // Lida com a seleção de uma opção
+        function selecionarOpcao(option) {
+            const value = option.getAttribute('data-value');
+            const secondValue = option.getAttribute('data-second-value');
+            const linha = option.closest('.linha');
+
+            // Atualiza o texto do select box
+            const selectBox = linha.querySelector('.select-box');
+            selectBox.innerText = value;
+
+            // Atualiza a conclusão com o valor selecionado
+            atualizarConclusao(secondValue);
+
+            // Esconde as opções
+            const optionsContainer = linha.querySelector('.options');
+            optionsContainer.style.display = 'none';
+        }
+
+        // Atualiza a conclusão
+        function atualizarConclusao(texto) {
+		    textoConclusao.innerText = texto;
+        }
+
+        // Deletar linha
+        function deletarLinha(element) {
+            const linha = element.parentElement;
+            linha.remove();
+        }
+
+       
+    
+	
+	
+	
+	
+        let currentLine; // Para armazenar a linha clicada
+
+        // Função para exibir o seletor
+        function exibirSeletor(elemento) {
+            currentLine = elemento.parentNode; // Guarda a linha clicada
+            const seletorContainer = document.getElementById('seletorContainer');
+            seletorContainer.style.display = 'block';
+            seletorContainer.style.top = (elemento.getBoundingClientRect().top + window.scrollY) + 'px'; // Define a posição do seletor
+            seletorContainer.style.left = (elemento.getBoundingClientRect().left + window.scrollX) + 'px'; // Define a posição do seletor
+        }
+
+        // Função para inserir a opção selecionada no seletor
+        function inserirOpcao() {
+            const seletor = document.getElementById('seletor');
+            const opcaoSelecionada = seletor.value;
+            const novaLinha = document.createElement('div');
+            novaLinha.className = 'linha';
+            novaLinha.innerHTML = `
+                <span class="deletar-linha ignore" onclick="deletarLinha(this)">✖</span>
+                <span>${opcaoSelecionada}</span>
+                <span class="adicionar-linha" onclick="exibirSeletor(this)">➕</span>
+				<span class="adicionar-linha ignore"><i class="material-icons icon">add_circle</i></span>
+            `;
+            currentLine.parentNode.insertBefore(novaLinha, currentLine.nextSibling);
+            fecharSeletor();
+        }
+
+        // Função para deletar a linha
+        function deletarLinha(elemento) {
+            const linha = elemento.parentNode;
+            linha.parentNode.removeChild(linha);
+        }
+
+        // Função para fechar o seletor
+        function fecharSeletor() {
+            document.getElementById('seletorContainer').style.display = 'none';
+        }
+
+        // Adiciona evento para fechar o seletor ao clicar fora dele
+        document.addEventListener('click', function(event) {
+            const seletorContainer = document.getElementById('seletorContainer');
+            const isClickInside = seletorContainer.contains(event.target) || event.target.closest('.adicionar-linha');
+            if (!isClickInside) {
+                fecharSeletor();
+            }
+        });
+		
+		// Função para fechar o seletor
+        function fecharSeletorPersonalizado() {
+            document.getElementById('options').style.display = 'none';
+        }
+
+// Adiciona evento para fechar o seletor ao clicar fora dele
+        document.addEventListener('click', function(event) {
+            const seletorpersonalizado = document.getElementById('seletorpersonalizado');
+            const isClickInside = seletorpersonalizado.contains(event.target)
+            if (!isClickInside) {
+                fecharSeletorPersonalizado();
+            }
+        });
+		
+		//efeito somente do selectbox
+		 const selectBox = document.getElementById('selectBox');
+		const options = document.getElementById('options');
+
+		selectBox.onclick = function() {
+			options.style.display = options.style.display === 'block' ? 'none' : 'block';
+		};
+
+		document.querySelectorAll('.option').forEach(option => {
+			option.onclick = function() {
+				// Atualiza o texto do select box com o valor definido
+				selectBox.textContent = this.getAttribute('data-value');
+				options.style.display = 'none';
+			};
+		});
+
+		// Fechar o dropdown se clicar fora dele
+		window.onclick = function(event) {
+			if (!selectBox.contains(event.target) && !options.contains(event.target)) {
+				options.style.display = 'none';
+			}
+		};
+    </script>
+</body>
+</html>
